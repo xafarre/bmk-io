@@ -3,12 +3,36 @@ set -euo pipefail
 
 # ============================================================
 #  IOR weak-scaling parameters (edit for your run)
+#  Reference: Annex E §4.4 — File system bandwidth test
+#             for non-NVMe based shared parallel file systems
 # ============================================================
-BLOCK_SIZE="4g"
-TRANSFER_SIZE="1m"
-SEGMENT_COUNT="4"
-IOR_EXTRA_ARGS="-w -r -F"
 
+# -- Size parameters --------------------------------------------------
+# -b  Block size: contiguous bytes written/read per task (2–8 GiB)
+BLOCK_SIZE="8g"
+# -t  Transfer size: single I/O operation size
+TRANSFER_SIZE="32m"
+# -s  Segment count: number of segments (blocks) per task
+SEGMENT_COUNT="1"
+
+# -- IOR flags (comment individual lines to disable) ------------------
+IOR_FLAGS=()
+IOR_FLAGS+=("-w")          # Write test
+IOR_FLAGS+=("-r")          # Read test
+IOR_FLAGS+=("-F")          # File-per-process (one file per task)
+IOR_FLAGS+=("-C")          # Reorder tasks for read — avoid client cache hits
+IOR_FLAGS+=("-e")          # fsync(2) after write close — flush to storage
+IOR_FLAGS+=("-g")          # Barriers between open, write/read, and close phases
+#IOR_FLAGS+=("-k")          # Keep written files (needed for separate read test)
+IOR_FLAGS+=("-a POSIX")    # Use the POSIX I/O API
+
+IOR_EXTRA_ARGS="${IOR_FLAGS[*]}"
+
+# -- Memory hogging (Annex E §4.4: at most 32 GiB free for buffer cache) --
+# Computed after sourcing the system file (needs NODE_MEMORY_GIB).
+MAX_CACHE_GIB=32
+
+# -- Scaling ----------------------------------------------------------
 TASKS_PER_NODE=128
 NTASKS_LIST="1 2 4 8 16 32 64 128"
 
@@ -56,6 +80,13 @@ fi
 
 # shellcheck source=/dev/null
 source "$SYSTEM_FILE"
+
+# -- Compute -M (memory hog %) from system's NODE_MEMORY_GIB ----------
+if [[ -n "${NODE_MEMORY_GIB:-}" ]]; then
+  MEM_HOG_PCT=$(( (NODE_MEMORY_GIB - MAX_CACHE_GIB) * 100 / NODE_MEMORY_GIB ))
+  IOR_EXTRA_ARGS+=" -M ${MEM_HOG_PCT}"
+  echo "  Memory hog: -M ${MEM_HOG_PCT}  (${NODE_MEMORY_GIB} GiB node, ≤${MAX_CACHE_GIB} GiB cache)"
+fi
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
