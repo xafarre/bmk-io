@@ -1,12 +1,16 @@
 # Usage: gnuplot -e "case_dir='path/to/case'" scripts/ior-ws-plot.gpi
+#        gnuplot -e "case_dir='path/to/case'; term='eps'" scripts/ior-ws-plot.gpi
+#
+# Optional: term = 'eps' | 'png' | 'dumb' (default: dumb = ASCII terminal)
 
 if (!exists("case_dir")) {
     print "Usage: gnuplot -e \"case_dir='results/ior-ws/...'\" scripts/ior-ws-plot.gpi"
     exit
 }
 
+if (!exists("term")) { term = "dumb" }
+
 dat       = case_dir . "/ior-ws.dat"
-png       = case_dir . "/ior-ws.png"
 case_file = case_dir . "/ior-ws.md"
 
 # Read metadata from case file
@@ -15,8 +19,15 @@ transfer_size = system("grep '^transfer_size' " . case_file . " | awk -F' = ' '{
 cluster       = system("grep '^cluster' "       . case_file . " | awk -F' = ' '{print $2}'")
 filesystem    = system("grep '^filesystem' "    . case_file . " | awk -F' = ' '{print $2}'")
 
-set terminal pngcairo size 900,600 enhanced font "Sans,12"
-set output png
+if (term eq "eps") {
+    set terminal postscript eps enhanced color font "Sans,12" size 6.5,4.5
+    set output case_dir . "/ior-ws.eps"
+} else if (term eq "png") {
+    set terminal pngcairo size 900,600 enhanced font "Sans,12"
+    set output case_dir . "/ior-ws.png"
+} else {
+    set terminal dumb size 120,40
+}
 
 set title sprintf("IOR Weak Scaling — %s / %s  (b=%s, t=%s)", cluster, filesystem, block_size, transfer_size)
 set xlabel "Number of tasks"
