@@ -1,0 +1,29 @@
+# Usage: gnuplot -e "case_dir='path/to/case'" scripts/ior-ws-plot.gpi
+
+if (!exists("case_dir")) {
+    print "Usage: gnuplot -e \"case_dir='results/ior-ws/...'\" scripts/ior-ws-plot.gpi"
+    exit
+}
+
+dat       = case_dir . "/ior-ws.dat"
+png       = case_dir . "/ior-ws.png"
+case_file = case_dir . "/ior-ws.md"
+
+# Read metadata from case file
+block_size    = system("grep '^block_size' "    . case_file . " | awk -F' = ' '{print $2}'")
+transfer_size = system("grep '^transfer_size' " . case_file . " | awk -F' = ' '{print $2}'")
+cluster       = system("grep '^cluster' "       . case_file . " | awk -F' = ' '{print $2}'")
+filesystem    = system("grep '^filesystem' "    . case_file . " | awk -F' = ' '{print $2}'")
+
+set terminal pngcairo size 900,600 enhanced font "Sans,12"
+set output png
+
+set title sprintf("IOR Weak Scaling — %s / %s  (b=%s, t=%s)", cluster, filesystem, block_size, transfer_size)
+set xlabel "Number of tasks"
+set ylabel "Bandwidth (MiB/s)"
+set key top left
+set grid
+set logscale x 2
+
+plot dat using 1:2 with linespoints lw 2 pt 7 title "Write", \
+     dat using 1:3 with linespoints lw 2 pt 5 title "Read"
