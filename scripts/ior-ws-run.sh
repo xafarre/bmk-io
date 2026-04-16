@@ -59,6 +59,33 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 TIMESTAMP=$(date +%Y-%m-%d_%H%M%S)
 CASE_DIR="$REPO_ROOT/results/ior-ws/$CLUSTER/$FILESYSTEM/$TIMESTAMP"
 
+# ---- Helper: convert IOR size string (e.g. 4g, 1m) to bytes ----
+size_to_bytes() {
+  local val="${1//[^0-9.]}"
+  local unit="${1//[0-9.]}"
+  case "${unit,,}" in
+    k) echo "$val * 1024"         | bc | cut -d. -f1 ;;
+    m) echo "$val * 1024^2"       | bc | cut -d. -f1 ;;
+    g) echo "$val * 1024^3"       | bc | cut -d. -f1 ;;
+    t) echo "$val * 1024^4"       | bc | cut -d. -f1 ;;
+    *) echo "$val"                | cut -d. -f1 ;;
+  esac
+}
+
+# ---- Helper: format bytes to human-readable ----
+bytes_to_human() {
+  local bytes=$1
+  if   (( bytes >= 1024**4 )); then echo "$(echo "scale=2; $bytes / 1024^4" | bc) TiB"
+  elif (( bytes >= 1024**3 )); then echo "$(echo "scale=2; $bytes / 1024^3" | bc) GiB"
+  elif (( bytes >= 1024**2 )); then echo "$(echo "scale=2; $bytes / 1024^2" | bc) MiB"
+  elif (( bytes >= 1024    )); then echo "$(echo "scale=2; $bytes / 1024"   | bc) KiB"
+  else echo "$bytes B"
+  fi
+}
+
+BLOCK_BYTES=$(size_to_bytes "$BLOCK_SIZE")
+PER_PROCESS_BYTES=$(( BLOCK_BYTES * SEGMENT_COUNT ))
+
 mkdir -p "$CASE_DIR"
 
 # ---- Write case description ----
