@@ -17,17 +17,19 @@ NTASKS_LIST="1 2 4 8 16 32 64 128"
 # ============================================================
 SYSTEM_FILE=""
 DRY_RUN=false
+CHAIN=false
 
 usage() {
   cat <<'EOF'
 Usage:
-  ./scripts/ior-ws-run.sh --system=<path> [--dry-run]
+  ./scripts/ior-ws-run.sh --system=<path> [--dry-run] [--chain]
 
 Required:
   --system=PATH    Path to system config file (e.g. systems/snellius.sh)
 
 Optional:
   --dry-run        Generate scripts without submitting
+  --chain          Submit jobs sequentially (each depends on the previous)
 EOF
 }
 
@@ -35,6 +37,7 @@ for arg in "$@"; do
   case "$arg" in
     --system=*) SYSTEM_FILE="${arg#--system=}" ;;
     --dry-run)  DRY_RUN=true ;;
+    --chain)    CHAIN=true ;;
     -h|--help)  usage; exit 0 ;;
     *)          echo "Unknown argument: $arg" >&2; usage; exit 1 ;;
   esac
@@ -118,9 +121,11 @@ echo "Case: $CASE_DIR"
 echo "  Size per process: $(bytes_to_human $PER_PROCESS_BYTES) (block_size=$BLOCK_SIZE x segments=$SEGMENT_COUNT)"
 
 # ---- Generate one SLURM script per ntasks ----
+PREV_JOBID=""
 for ntasks in $NTASKS_LIST; do
   nodes=$(( (ntasks + TASKS_PER_NODE - 1) / TASKS_PER_NODE ))
   ppn=$(( ntasks < TASKS_PER_NODE ? ntasks : TASKS_PER_NODE ))
+  global_bytes=$(( PER_PROCESS_BYTES * ntasks ))
   job_name="ior-ws_n${ntasks}"
   script="$CASE_DIR/${job_name}.sh"
 
@@ -149,7 +154,12 @@ SLURM
   echo "  Generated: ${job_name}.sh  (ntasks=${ntasks}, global_size=$(bytes_to_human $global_bytes))"
 
   if ! $DRY_RUN; then
-    sbatch "$script"
+    sbatch_args=()
+    if $CHAIN && [[ -n "$PREV_JOBID" ]]; then
+      sbatch_args+=(--dependency=afterany:"$PREV_JOBID")
+    fi
+    PREV_JOBID=$(sbatch "${sbatch_args[@]}" "$script" | awk '{print $NF}')
+    echo "    Submitted job $PREV_JOBID"
   fi
 done
 
