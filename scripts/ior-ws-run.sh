@@ -29,8 +29,11 @@ IOR_FLAGS+=("-a POSIX")    # Use the POSIX I/O API
 IOR_EXTRA_ARGS="${IOR_FLAGS[*]}"
 
 # -- Memory hogging (Annex E §4.4: at most 32 GiB free for buffer cache) --
-# Computed after sourcing the system file (needs NODE_MEMORY_GIB).
-MAX_CACHE_GIB=32
+# Computed per job after sourcing the system file (needs NODE_MEMORY_GIB).
+# Free memory left on node = max(MAX_CACHE, ppn * OVERHEAD_PER_TASK).
+# At low ppn the cache limit dominates; at high ppn the process overhead does.
+MAX_CACHE_MIB=$((32 * 1024))      # 32 GiB in MiB
+OVERHEAD_PER_TASK_MIB=512          # 512 MiB per task (MPI, stack, IOR buffers)
 
 # -- Scaling ----------------------------------------------------------
 TASKS_PER_NODE=128
@@ -80,13 +83,6 @@ fi
 
 # shellcheck source=/dev/null
 source "$SYSTEM_FILE"
-
-# -- Compute -M (memory hog %) from system's NODE_MEMORY_GIB ----------
-if [[ -n "${NODE_MEMORY_GIB:-}" ]]; then
-  MEM_HOG_PCT=$(( (NODE_MEMORY_GIB - MAX_CACHE_GIB) * 100 / NODE_MEMORY_GIB ))
-  IOR_EXTRA_ARGS+=" -M ${MEM_HOG_PCT}"
-  echo "  Memory hog: -M ${MEM_HOG_PCT}  (${NODE_MEMORY_GIB} GiB node, ≤${MAX_CACHE_GIB} GiB cache)"
-fi
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
@@ -160,6 +156,18 @@ for ntasks in $NTASKS_LIST; do
   job_name="ior-ws_n${ntasks}"
   script="$CASE_DIR/${job_name}.sh"
 
+  # -M is per-node: hog % of node RAM, leaving max(cache, task overhead) free
+  MEM_HOG_ARGS=""
+  if [[ -n "${NODE_MEMORY_GIB:-}" ]]; then
+    NODE_MEM_MIB=$(( NODE_MEMORY_GIB * 1024 ))
+    TASK_OVERHEAD_MIB=$(( ppn * OVERHEAD_PER_TASK_MIB ))
+    FREE_MIB=$(( MAX_CACHE_MIB > TASK_OVERHEAD_MIB ? MAX_CACHE_MIB : TASK_OVERHEAD_MIB ))
+    if (( FREE_MIB < NODE_MEM_MIB )); then
+      MEM_HOG_PCT=$(( (NODE_MEM_MIB - FREE_MIB) * 100 / NODE_MEM_MIB ))
+      MEM_HOG_ARGS="-M ${MEM_HOG_PCT}"
+    fi
+  fi
+
   cat > "$script" <<SLURM
 #!/bin/bash
 #SBATCH --job-name=${job_name}
@@ -178,7 +186,7 @@ $(printf '%s\n' "${ENV_SETUP[@]}")
 
 # --- IOR weak scaling ---
 mkdir -p ${TARGET_DIR}/n${ntasks}
-${RUNNER} ${IOR} -b ${BLOCK_SIZE} -t ${TRANSFER_SIZE} -s ${SEGMENT_COUNT} ${IOR_EXTRA_ARGS} -o ${TARGET_DIR}/n${ntasks}/iorfile
+${RUNNER} ${IOR} -b ${BLOCK_SIZE} -t ${TRANSFER_SIZE} -s ${SEGMENT_COUNT} ${IOR_EXTRA_ARGS} ${MEM_HOG_ARGS} -o ${TARGET_DIR}/n${ntasks}/iorfile
 SLURM
 
   chmod +x "$script"

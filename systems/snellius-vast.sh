@@ -13,6 +13,9 @@ TIME="00:30:00"
 RUNNER="srun"
 FEATURES="vastnfs"
 
+# Total RAM per node (GiB)
+NODE_MEMORY_GIB=256
+
 # Modules & environment (one entry per command)
 ENV_SETUP=(
   "module load 2025"
