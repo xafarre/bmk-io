@@ -115,6 +115,7 @@ target_dir = $TARGET_DIR
 EOF
 
 echo "Case: $CASE_DIR"
+echo "  Size per process: $(bytes_to_human $PER_PROCESS_BYTES) (block_size=$BLOCK_SIZE x segments=$SEGMENT_COUNT)"
 
 # ---- Generate one SLURM script per ntasks ----
 for ntasks in $NTASKS_LIST; do
@@ -134,6 +135,7 @@ for ntasks in $NTASKS_LIST; do
 #SBATCH --output=${CASE_DIR}/${job_name}_%j.out
 #SBATCH --error=${CASE_DIR}/${job_name}_%j.err
 #SBATCH --constraint=${FEATURES}
+#SBATCH --exclusive
 
 # --- Modules & environment ---
 $(printf '%s\n' "${ENV_SETUP[@]}")
@@ -144,7 +146,7 @@ ${RUNNER} ${IOR} -b ${BLOCK_SIZE} -t ${TRANSFER_SIZE} -s ${SEGMENT_COUNT} ${IOR_
 SLURM
 
   chmod +x "$script"
-  echo "  Generated: ${job_name}.sh"
+  echo "  Generated: ${job_name}.sh  (ntasks=${ntasks}, global_size=$(bytes_to_human $global_bytes))"
 
   if ! $DRY_RUN; then
     sbatch "$script"
