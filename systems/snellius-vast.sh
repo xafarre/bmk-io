@@ -11,7 +11,7 @@ CLUSTER="snellius"
 PARTITION="rome"
 TIME="00:30:00"
 RUNNER="srun"
-FEATURES=""
+FEATURES="vastnfs"
 
 # Modules & environment (one entry per command)
 ENV_SETUP=(
@@ -23,5 +23,5 @@ ENV_SETUP=(
 IOR="$HOME/.local/bin/ior"
 
 # Target filesystem
-FILESYSTEM="scratch-shared"
-TARGET_DIR="/scratch-shared/$USER/ior-ws"
+FILESYSTEM="vast"
+TARGET_DIR="/vast/projects/$USER/ior-ws"
