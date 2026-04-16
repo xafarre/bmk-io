@@ -8,9 +8,10 @@
 #   make && make install
 
 CLUSTER="snellius"
-PARTITION="thin"
+PARTITION="rome"
 TIME="00:30:00"
 RUNNER="srun"
+FEATURES="vastnfs"
 
 # Modules & environment (one entry per command)
 ENV_SETUP=(

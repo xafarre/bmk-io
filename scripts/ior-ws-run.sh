@@ -106,6 +106,7 @@ for ntasks in $NTASKS_LIST; do
 #SBATCH --partition=${PARTITION}
 #SBATCH --output=${CASE_DIR}/${job_name}_%j.out
 #SBATCH --error=${CASE_DIR}/${job_name}_%j.err
+#SBATCH --constraint=${FEATURES}
 
 # --- Modules & environment ---
 $(printf '%s\n' "${ENV_SETUP[@]}")
