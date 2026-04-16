@@ -6,7 +6,7 @@ set -euo pipefail
 # ============================================================
 BLOCK_SIZE="4g"
 TRANSFER_SIZE="1m"
-SEGMENT_COUNT="16"
+SEGMENT_COUNT="4"
 IOR_EXTRA_ARGS="-w -r -F"
 
 TASKS_PER_NODE=128
