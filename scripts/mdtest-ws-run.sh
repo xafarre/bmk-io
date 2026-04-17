@@ -168,8 +168,13 @@ for ntasks in $NTASKS_LIST; do
 $(printf '%s\n' "${ENV_SETUP[@]}")
 
 # --- MDTEST weak scaling ---
-mkdir -p ${TARGET_DIR}/n${ntasks}
-${RUNNER} ${MDTEST} ${MDTEST_EXTRA_ARGS} -d ${TARGET_DIR}/n${ntasks}
+# Keep permissions predictable and owner-writable.
+umask 022
+
+# Use a per-job run directory so reruns do not collide with stale test-dir.* trees.
+TARGET_DIR="${TARGET_DIR}/\${SLURM_JOB_ID}"
+mkdir -p "\${TARGET_DIR}"
+${RUNNER} ${MDTEST} ${MDTEST_EXTRA_ARGS} -d "\${TARGET_DIR}"
 SLURM
 
   chmod +x "$script"

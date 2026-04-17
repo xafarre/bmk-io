@@ -192,8 +192,9 @@ for ntasks in $NTASKS_LIST; do
 $(printf '%s\n' "${ENV_SETUP[@]}")
 
 # --- IOR weak scaling ---
-mkdir -p ${TARGET_DIR}/n${ntasks}
-${RUNNER} ${IOR} -b ${BLOCK_SIZE} -t ${TRANSFER_SIZE} -s ${SEGMENT_COUNT} ${IOR_EXTRA_ARGS} ${MEM_HOG_ARGS} -o ${TARGET_DIR}/n${ntasks}/iorfile
+TARGET_DIR="${TARGET_DIR}/\${SLURM_JOB_ID}"
+mkdir -p "\${TARGET_DIR}"
+${RUNNER} ${IOR} -b ${BLOCK_SIZE} -t ${TRANSFER_SIZE} -s ${SEGMENT_COUNT} ${IOR_EXTRA_ARGS} ${MEM_HOG_ARGS} -o "\${TARGET_DIR}/iorfile"
 SLURM
 
   chmod +x "$script"
