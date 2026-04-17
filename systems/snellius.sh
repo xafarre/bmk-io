@@ -24,7 +24,9 @@ ENV_SETUP=(
 
 # IOR executable
 IOR="$HOME/.local/bin/ior"
+# MDTEST executable
+MDTEST="$HOME/.local/bin/mdtest"
 
 # Target filesystem
 FILESYSTEM="scratch-shared"
-TARGET_DIR="/scratch-shared/$USER/ior-ws"
+TARGET_DIR="/scratch-shared/$USER"

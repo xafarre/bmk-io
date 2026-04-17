@@ -3,7 +3,7 @@ set -euo pipefail
 
 # ============================================================
 #  IOR weak-scaling parameters (edit for your run)
-#  Reference: Annex E §4.4 — File system bandwidth test
+#  Reference: Annex E — File system bandwidth test
 #             for non-NVMe based shared parallel file systems
 # ============================================================
 
@@ -38,8 +38,10 @@ MAX_CACHE_MIB=$((32 * 1024))      # 32 GiB in MiB
 OVERHEAD_PER_TASK_MIB=1024        # 1024 MiB per task (MPI, stack, IOR buffers)
 
 # -- Scaling ----------------------------------------------------------
-TASKS_PER_NODE=128
-NTASKS_LIST="1 2 4 8 16 32 64 128"
+#TASKS_PER_NODE=128
+#NTASKS_LIST="1 2 4 8 16 32 64 128"
+TASKS_PER_NODE=8
+NTASKS_LIST="8 16 32 64 128 256 512"
 
 # ============================================================
 #  Parse arguments
@@ -85,6 +87,9 @@ fi
 
 # shellcheck source=/dev/null
 source "$SYSTEM_FILE"
+
+# Append case-specific subdirectory to target dir
+TARGET_DIR="${TARGET_DIR}/ior-ws"
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"

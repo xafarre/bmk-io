@@ -9,7 +9,7 @@
 
 CLUSTER="snellius"
 PARTITION="rome"
-TIME="00:30:00"
+TIME="00:60:00"
 RUNNER="srun"
 FEATURES="vastnfs"
 
@@ -24,7 +24,9 @@ ENV_SETUP=(
 
 # IOR executable
 IOR="$HOME/.local/bin/ior"
+# MDTEST executable
+MDTEST="$HOME/.local/bin/mdtest"
 
 # Target filesystem
 FILESYSTEM="vast"
-TARGET_DIR="/vast/projects/$USER/ior-ws"
+TARGET_DIR="/vast/projects/$USER"
