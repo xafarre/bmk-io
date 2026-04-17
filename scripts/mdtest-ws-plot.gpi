@@ -1,0 +1,42 @@
+# Usage: gnuplot -e "case_dir='path/to/case'" scripts/mdtest-ws-plot.gpi
+#        gnuplot -e "case_dir='path/to/case'; term='eps'" scripts/mdtest-ws-plot.gpi
+#
+# Optional: term = 'eps' | 'png' | 'dumb' (default: dumb = ASCII terminal)
+
+if (!exists("case_dir")) {
+    print "Usage: gnuplot -e \"case_dir='results/mdtest-ws/...'\" scripts/mdtest-ws-plot.gpi"
+    exit
+}
+
+if (!exists("term")) { term = "dumb" }
+
+dat       = case_dir . "/mdtest-ws.dat"
+case_file = case_dir . "/mdtest-ws.md"
+
+# Read metadata from case file
+cluster       = system("grep '^cluster' "       . case_file . " | awk -F' = ' '{print $2}'")
+filesystem    = system("grep '^filesystem' "    . case_file . " | awk -F' = ' '{print $2}'")
+
+if (term eq "eps") {
+    set terminal postscript eps enhanced color font "Sans,12" size 6.5,4.5
+    set output case_dir . "/mdtest-ws.eps"
+} else if (term eq "png") {
+    set terminal pngcairo size 900,600 enhanced font "Sans,12"
+    set output case_dir . "/mdtest-ws.png"
+} else {
+    set terminal dumb size 120,40
+}
+
+set title sprintf("MDTEST Weak Scaling — %s / %s", cluster, filesystem)
+set xlabel "Number of tasks"
+set ylabel "Operations per second"
+set key top left
+set grid
+set logscale x 2
+
+plot dat using 1:2 with linespoints lw 2 pt 7 title "Dir create", \
+     dat using 1:3 with linespoints lw 2 pt 5 title "Dir stat", \
+     dat using 1:4 with linespoints lw 2 pt 9 title "Dir remove", \
+     dat using 1:5 with linespoints lw 2 pt 4 title "File create", \
+     dat using 1:6 with linespoints lw 2 pt 6 title "File stat", \
+     dat using 1:7 with linespoints lw 2 pt 8 title "File remove"
