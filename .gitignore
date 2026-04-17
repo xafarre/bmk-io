@@ -1,0 +1,9 @@
+# Generated run artifacts
+/results/*
+
+# Temporary files
+/tmp/*
+
+# Editor/OS
+.DS_Store
+.vscode/
