@@ -28,12 +28,14 @@ IOR_FLAGS+=("-a POSIX")    # Use the POSIX I/O API
 
 IOR_EXTRA_ARGS="${IOR_FLAGS[*]}"
 
-# -- Memory hogging (Annex E §4.4: at most 32 GiB free for buffer cache) --
+# -- Snellius Acceptance Test - Annex E --
+# Memory hogging: at most 32 GiB free for buffer cache or 512-1024 MiB per task for
+# overhead (MPI, stack, IOR buffers), whichever is larger.
 # Computed per job after sourcing the system file (needs NODE_MEMORY_GIB).
 # Free memory left on node = max(MAX_CACHE, ppn * OVERHEAD_PER_TASK).
 # At low ppn the cache limit dominates; at high ppn the process overhead does.
 MAX_CACHE_MIB=$((32 * 1024))      # 32 GiB in MiB
-OVERHEAD_PER_TASK_MIB=512          # 512 MiB per task (MPI, stack, IOR buffers)
+OVERHEAD_PER_TASK_MIB=1024        # 1024 MiB per task (MPI, stack, IOR buffers)
 
 # -- Scaling ----------------------------------------------------------
 TASKS_PER_NODE=128
